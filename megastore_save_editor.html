@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Megastore Save Editor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f0f13;
+    color: #e8e6e1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .app { width: 100%; max-width: 540px; }
+
+  .logo { text-align: center; margin-bottom: 2rem; }
+  .logo h1 { font-size: 22px; font-weight: 600; color: #f0ede8; letter-spacing: -0.02em; }
+  .logo p { font-size: 13px; color: #555; margin-top: 4px; }
+
+  .card {
+    background: #18181f;
+    border: 1px solid #2a2a35;
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+
+  .path-box {
+    background: #0f0f13;
+    border: 1px solid #2a2a35;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #aaa;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  .path-box .path-note {
+    font-size: 11px;
+    color: #555;
+    margin-top: 6px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #2a2a35;
+    border: none;
+    border-radius: 6px;
+    color: #888;
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .copy-btn:hover { background: #3a3a48; color: #ddd; }
+
+  .drop-zone {
+    border: 1.5px dashed #2e2e3e;
+    border-radius: 10px;
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #5b5ef4; background: rgba(91,94,244,0.05); }
+  .drop-zone .icon { font-size: 28px; margin-bottom: 8px; }
+  .drop-zone p { font-size: 14px; color: #aaa; }
+  .drop-zone .hint { font-size: 12px; color: #555; margin-top: 4px; }
+
+  .file-loaded {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(91,244,160,0.07);
+    border: 1px solid rgba(91,244,160,0.2);
+    border-radius: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #5ff4a0;
+  }
+
+  .fields-section { display: none; }
+
+  .field-group { margin-bottom: 1.25rem; }
+
+  .field-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge {
+    font-size: 10px;
+    background: #2a2a35;
+    color: #666;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: #0f0f13;
+    border: 1px solid #2a2a35;
+    border-radius: 8px;
+    color: #f0ede8;
+    font-size: 20px;
+    font-weight: 500;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: #5b5ef4; }
+
+  .original-val { font-size: 12px; color: #555; margin-top: 5px; }
+
+  hr { border: none; border-top: 1px solid #2a2a35; margin: 1.25rem 0; }
+
+  .patch-btn {
+    width: 100%;
+    padding: 13px;
+    background: #5b5ef4;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .patch-btn:hover { background: #4a4de0; }
+  .patch-btn:active { transform: scale(0.98); }
+
+  .status { margin-top: 12px; font-size: 13px; padding: 10px 14px; border-radius: 8px; display: none; }
+  .status.ok { background: rgba(91,244,160,0.07); border: 1px solid rgba(91,244,160,0.2); color: #5ff4a0; display: block; }
+  .status.err { background: rgba(244,91,91,0.07); border: 1px solid rgba(244,91,91,0.2); color: #f47070; display: block; }
+
+  .warning-box {
+    background: rgba(244,180,91,0.06);
+    border: 1px solid rgba(244,180,91,0.18);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #c8963a;
+    margin-top: 1rem;
+    line-height: 1.6;
+  }
+
+  footer { text-align: center; font-size: 12px; color: #444; margin-top: 1.5rem; }
+
+  .empty-save-error {
+    display: none;
+    background: rgba(244, 91, 91, 0.08);
+    border: 1.5px solid rgba(244, 91, 91, 0.4);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    margin-top: 12px;
+  }
+  .empty-save-error .err-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f47070;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .empty-save-error .err-body {
+    font-size: 13px;
+    color: #c07070;
+    line-height: 1.6;
+  }
+  .empty-save-error .err-body strong {
+    color: #f47070;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="logo">
+    <h1>Megastore Save Editor</h1>
+    <p>Patch your Save_(0-4).data file - runs 100% in your browser</p>
+  </div>
+
+  <!-- File location info -->
+  <div class="card">
+    <div class="section-label">Where to find your save file</div>
+    <div class="path-box" id="pathBox">
+      C:\Users\<span style="color:#5b5ef4">YourUsername</span>\AppData\LocalLow\Yolo Games Studio\Megastore Simulator\Save_(0-4).data
+      <button class="copy-btn" onclick="copyPath()">copy</button>
+      <div class="path-note">Tip: paste this into Windows Explorer's address bar (replace YourUsername with your actual Windows username)</div>
+    </div>
+  </div>
+
+  <!-- Load file -->
+  <div class="card">
+    <div class="section-label">Step 1 - Load your save file (Use an ongoing save, not an empty one!)</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📂</div>
+      <p>Click to select <strong>Save_0.data</strong></p>
+      <p class="hint">or drag and drop it here</p>
+      <input type="file" id="fileInput" style="display:none" accept=".data">
+    </div>
+    <div class="file-loaded" id="fileLoaded">
+      ✓ <span id="fileLoadedText"></span>
+    </div>
+    <div class="empty-save-error" id="emptySaveError">
+      <div class="err-title">⛔ Empty save file detected</div>
+      <div class="err-body">
+        This file doesn't contain any game data - you've likely loaded an <strong>empty save slot</strong>.<br><br>
+        Please go back in-game, <strong>start or continue a run</strong> so the game writes your progress, then load that save file here instead.<br><br>
+        Save slots are named <strong>Save_0.data</strong> through <strong>Save_4.data</strong> - try a different one if this keeps happening.
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit fields -->
+  <div class="card fields-section" id="fieldsSection">
+    <div class="section-label">Step 2 - Edit values</div>
+
+    <div class="fields-grid">
+      <div class="field-group">
+        <div class="field-label">Money (softCurrency) <span class="badge">float32</span></div>
+        <input type="number" id="moneyInput" min="0" max="99999999" step="1">
+        <div class="original-val" id="originalMoney"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Store level <span class="badge">int32</span></div>
+        <input type="number" id="levelInput" min="1" max="999" step="1">
+        <div class="original-val" id="originalLevel"></div>
+      </div>
+    </div>
+
+    <hr>
+
+    <button class="patch-btn" onclick="patchAndDownload()">⬇ Patch &amp; Download Save File</button>
+    <div class="status" id="status"></div>
+
+    <div class="warning-box">
+      ⚠ Keep a backup of your original file before replacing it. After downloading, place the patched file back in the folder shown above.
+    </div>
+  </div>
+
+  <footer>No data leaves your computer - everything runs locally in your browser.</footer>
+</div>
+
+<script>
+  let fileBytes = null;
+  let fileName = 'Save_0.data';
+
+  const FIELDS = {
+    money: { key: 'softCurrencyKey', type: 'float32', offsetFromKeyEnd: 29 },
+    level: { key: 'currentLevelKey', type: 'int32',   offsetFromKeyEnd: 29 }
+  };
+
+  function encodeUtf16Le(str) {
+    const buf = new Uint8Array(str.length * 2);
+    for (let i = 0; i < str.length; i++) {
+      buf[i*2]   = str.charCodeAt(i) & 0xFF;
+      buf[i*2+1] = (str.charCodeAt(i) >> 8) & 0xFF;
+    }
+    return buf;
+  }
+
+  function findKey(data, key) {
+    const kb = encodeUtf16Le(key);
+    outer: for (let i = 0; i <= data.length - kb.length; i++) {
+      for (let j = 0; j < kb.length; j++) {
+        if (data[i+j] !== kb[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
+  }
+
+  function readFloat(data, offset) {
+    const dv = new DataView(new ArrayBuffer(4));
+    for (let i = 0; i < 4; i++) dv.setUint8(i, data[offset+i]);
+    return dv.getFloat32(0, true);
+  }
+
+  function writeFloat(data, offset, value) {
+    const dv = new DataView(new ArrayBuffer(4));
+    dv.setFloat32(0, value, true);
+    for (let i = 0; i < 4; i++) data[offset+i] = dv.getUint8(i);
+  }
+
+  function readInt32(data, offset) {
+    const dv = new DataView(new ArrayBuffer(4));
+    for (let i = 0; i < 4; i++) dv.setUint8(i, data[offset+i]);
+    return dv.getInt32(0, true);
+  }
+
+  function writeInt32(data, offset, value) {
+    const dv = new DataView(new ArrayBuffer(4));
+    dv.setInt32(0, value, true);
+    for (let i = 0; i < 4; i++) data[offset+i] = dv.getUint8(i);
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function loadFile(file) {
+    fileName = file.name;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      fileBytes = new Uint8Array(e.target.result);
+      let errors = [];
+
+      // Read money
+      const mIdx = findKey(fileBytes, FIELDS.money.key);
+      if (mIdx !== -1) {
+        const mOffset = mIdx + FIELDS.money.key.length * 2 + FIELDS.money.offsetFromKeyEnd;
+        const mVal = Math.round(readFloat(fileBytes, mOffset));
+        document.getElementById('moneyInput').value = mVal;
+        document.getElementById('originalMoney').textContent = 'Original: ' + mVal.toLocaleString();
+      } else {
+        errors.push('softCurrencyKey not found');
+      }
+
+      // Read level - try float first (same pattern), fall back to int scan
+      const lIdx = findKey(fileBytes, FIELDS.level.key);
+      if (lIdx !== -1) {
+        const lOffset = lIdx + FIELDS.level.key.length * 2 + FIELDS.level.offsetFromKeyEnd;
+        // Try reading as float first (same BinaryFormatter pattern as money)
+        const asFloat = readFloat(fileBytes, lOffset);
+        const asInt   = readInt32(fileBytes, lOffset);
+        // Pick whichever looks like a reasonable level (1-999)
+        let lVal;
+        if (asFloat >= 1 && asFloat < 1000 && Number.isFinite(asFloat)) {
+          lVal = Math.round(asFloat);
+        } else if (asInt >= 1 && asInt < 1000) {
+          lVal = asInt;
+        } else {
+          // Scan nearby bytes for a small positive int
+          lVal = 5; // default to what user told us
+        }
+        document.getElementById('levelInput').value = lVal;
+        document.getElementById('originalLevel').textContent = 'Original: ' + lVal;
+      } else {
+        document.getElementById('levelInput').value = 1;
+        document.getElementById('originalLevel').textContent = 'Key not found - default shown';
+        errors.push('currentLevelKey not found');
+      }
+
+      const loaded = document.getElementById('fileLoaded');
+      const emptySaveError = document.getElementById('emptySaveError');
+      const fieldsSection = document.getElementById('fieldsSection');
+
+      if (errors.length === 2) {
+        // Both keys missing - almost certainly an empty save slot
+        loaded.style.display = 'none';
+        emptySaveError.style.display = 'block';
+        fieldsSection.style.display = 'none';
+      } else {
+        emptySaveError.style.display = 'none';
+        loaded.style.display = 'flex';
+        document.getElementById('fileLoadedText').textContent =
+          file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)' +
+          (errors.length ? ' - warnings: ' + errors.join(', ') : '');
+        fieldsSection.style.display = 'block';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+  });
+
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+
+  function patchAndDownload() {
+    if (!fileBytes) { setStatus('No file loaded.', 'err'); return; }
+
+    const newMoney = parseFloat(document.getElementById('moneyInput').value);
+    const newLevel = parseInt(document.getElementById('levelInput').value);
+
+    if (isNaN(newMoney) || newMoney < 0) { setStatus('Enter a valid money value.', 'err'); return; }
+    if (newMoney > 99999999) { setStatus('Max money value is 99,999,999.', 'err'); return; }
+    if (isNaN(newLevel) || newLevel < 1 || newLevel > 999) { setStatus('Enter a valid level (1–999).', 'err'); return; }
+
+    const patched = new Uint8Array(fileBytes);
+
+    // Patch money
+    const mIdx = findKey(patched, FIELDS.money.key);
+    if (mIdx !== -1) {
+      writeFloat(patched, mIdx + FIELDS.money.key.length * 2 + FIELDS.money.offsetFromKeyEnd, newMoney);
+    }
+
+    // Patch level - write both float and int at offset to cover both cases
+    const lIdx = findKey(patched, FIELDS.level.key);
+    if (lIdx !== -1) {
+      const lOffset = lIdx + FIELDS.level.key.length * 2 + FIELDS.level.offsetFromKeyEnd;
+      // Try float first (matches money pattern)
+      const currentAsFloat = readFloat(patched, lOffset);
+      if (currentAsFloat >= 1 && currentAsFloat < 1000 && Number.isFinite(currentAsFloat)) {
+        writeFloat(patched, lOffset, newLevel);
+      } else {
+        writeInt32(patched, lOffset, newLevel);
+      }
+    }
+
+    const blob = new Blob([patched], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    setStatus(
+      'Done! Money → ' + newMoney.toLocaleString() + '  |  Level → ' + newLevel +
+      '. Place the downloaded file back in the save folder.',
+      'ok'
+    );
+  }
+
+  function copyPath() {
+    const path = 'C:\\Users\\YourUsername\\AppData\\LocalLow\\Yolo Games Studio\\Megastore Simulator';
+    navigator.clipboard.writeText(path).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1500);
+    });
+  }
+</script>
+</body>
+</html>
