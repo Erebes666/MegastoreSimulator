@@ -40,6 +40,8 @@ No installations, no servers, no data uploads - everything runs 100% locally in 
 
 ---
 ![App screenshot](https://github.com/Erebes666/MegastoreSimulator/blob/main/Assets/MegastoreSimulatorSaveEditor.gif)
+
+![App screenshot](https://github.com/Erebes666/MegastoreSimulator/blob/main/Assets/Save_Editor.png)
 ---
 
 ## Compatibility
