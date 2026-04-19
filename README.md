@@ -24,7 +24,7 @@ No installations, no servers, no data uploads - everything runs 100% locally in 
    ```
    Save files are named `Save_0.data` through `Save_4.data`.
 
-   > ⚠️ Make sure to pick a save slot that has an **active run** - empty slots won't contain any data to edit.
+   > ⚠️ Make sure to pick a save slot that has an **active run** - empty slots or new slot with unfinished tutorial won't contain any data to edit.
 
 2. **Back up your file** before making any changes (copy it somewhere safe).
 
@@ -38,6 +38,8 @@ No installations, no servers, no data uploads - everything runs 100% locally in 
 
 7. **Replace** the original file in the save folder with the downloaded one.
 
+---
+![App screenshot](https://github.com/Erebes666/MegastoreSimulator/blob/main/Assets/MegastoreSimulatorSaveEditor.gif)
 ---
 
 ## Compatibility
